@@ -17,7 +17,7 @@ function GlobeMark() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="shrink-0 text-gray-900"
+      className="shrink-0 text-[#4169E1]"
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="9" />

@@ -195,13 +195,8 @@ export default async function Home({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <header className="mb-6 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">一覧</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            RSSで収集したニュースの一覧
-          </p>
-        </div>
+      <header className="mb-6 flex items-center justify-between gap-3">
+        <p className="text-sm text-gray-500">RSSで収集したニュースの一覧</p>
         <form action={refreshNow}>
           <button
             type="submit"

@@ -22,10 +22,10 @@ export function TabNav() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`flex-1 py-3 text-center text-sm font-medium ${
+            className={`flex-1 border-b-2 py-3 text-center text-sm font-medium ${
               active
-                ? "border-b-2 border-gray-900 text-gray-900"
-                : "text-gray-500"
+                ? "border-[#4169E1] text-[#4169E1]"
+                : "border-transparent text-gray-500"
             }`}
           >
             {tab.label}
