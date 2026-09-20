@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "一覧" },
   { href: "/keywords", label: "キーワード設定" },
+  { href: "/feeds", label: "ソース管理" },
 ];
 
 export function TabNav() {
