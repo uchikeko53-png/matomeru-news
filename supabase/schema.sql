@@ -36,8 +36,11 @@ create table if not exists bookmarks (
   id bigint generated always as identity primary key,
   name text not null,
   url text not null unique,
+  sort_order integer,
   created_at timestamptz not null default now()
 );
+alter table bookmarks add column if not exists sort_order integer;
+update bookmarks set sort_order = id where sort_order is null;
 
 create index if not exists articles_published_at_idx on articles (published_at desc);
 create index if not exists articles_category_idx on articles (category);

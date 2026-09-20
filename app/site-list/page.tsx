@@ -8,7 +8,7 @@ export default async function SiteListPage() {
   const { data, error } = await supabase
     .from("bookmarks")
     .select("*")
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true });
 
   const bookmarks = (data as Bookmark[]) ?? [];
 

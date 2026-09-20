@@ -29,5 +29,6 @@ export type Bookmark = {
   id: number;
   name: string;
   url: string;
+  sort_order: number | null;
   created_at: string;
 };

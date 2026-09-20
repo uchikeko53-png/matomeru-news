@@ -11,7 +11,15 @@ async function addBookmark(formData: FormData) {
   if (!name || !url) return;
 
   const supabase = getSupabaseServerClient();
-  await supabase.from("bookmarks").insert({ name, url });
+  const { data: last } = await supabase
+    .from("bookmarks")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = (last?.sort_order ?? 0) + 1;
+
+  await supabase.from("bookmarks").insert({ name, url, sort_order: nextOrder });
   revalidatePath("/links");
   revalidatePath("/site-list");
 }
@@ -27,12 +35,47 @@ async function deleteBookmark(formData: FormData) {
   revalidatePath("/site-list");
 }
 
+async function moveBookmark(formData: FormData) {
+  "use server";
+  const id = Number(formData.get("id"));
+  const direction = String(formData.get("direction"));
+  if (!id) return;
+
+  const supabase = getSupabaseServerClient();
+  const { data } = await supabase
+    .from("bookmarks")
+    .select("id, sort_order")
+    .order("sort_order", { ascending: true });
+
+  const list = data ?? [];
+  const index = list.findIndex((b) => b.id === id);
+  if (index === -1) return;
+
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= list.length) return;
+
+  const current = list[index];
+  const swap = list[swapIndex];
+
+  await supabase
+    .from("bookmarks")
+    .update({ sort_order: swap.sort_order })
+    .eq("id", current.id);
+  await supabase
+    .from("bookmarks")
+    .update({ sort_order: current.sort_order })
+    .eq("id", swap.id);
+
+  revalidatePath("/links");
+  revalidatePath("/site-list");
+}
+
 export default async function LinksPage() {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("bookmarks")
     .select("*")
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true });
 
   const bookmarks = (data as Bookmark[]) ?? [];
 
@@ -43,7 +86,7 @@ export default async function LinksPage() {
           ← 各種設定に戻る
         </a>
         <p className="mt-2 text-sm text-gray-500">
-          登録したサイトが「サイト一覧」タブに表示されます。
+          登録したサイトが「サイト一覧」タブに表示されます。矢印で表示順を変更できます。
         </p>
       </header>
 
@@ -85,16 +128,44 @@ export default async function LinksPage() {
       )}
 
       <ul className="space-y-2">
-        {bookmarks.map((b) => (
+        {bookmarks.map((b, index) => (
           <li
             key={b.id}
             className="flex items-center justify-between gap-2 rounded border border-gray-200 bg-white px-3 py-2"
           >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">
-                {b.name}
-              </p>
-              <p className="truncate text-xs text-gray-400">{b.url}</p>
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex shrink-0 flex-col">
+                <form action={moveBookmark}>
+                  <input type="hidden" name="id" value={b.id} />
+                  <input type="hidden" name="direction" value="up" />
+                  <button
+                    type="submit"
+                    disabled={index === 0}
+                    className="block px-1 text-xs text-gray-500 disabled:opacity-20"
+                    aria-label="上に移動"
+                  >
+                    ▲
+                  </button>
+                </form>
+                <form action={moveBookmark}>
+                  <input type="hidden" name="id" value={b.id} />
+                  <input type="hidden" name="direction" value="down" />
+                  <button
+                    type="submit"
+                    disabled={index === bookmarks.length - 1}
+                    className="block px-1 text-xs text-gray-500 disabled:opacity-20"
+                    aria-label="下に移動"
+                  >
+                    ▼
+                  </button>
+                </form>
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {b.name}
+                </p>
+                <p className="truncate text-xs text-gray-400">{b.url}</p>
+              </div>
             </div>
             <form action={deleteBookmark}>
               <input type="hidden" name="id" value={b.id} />
