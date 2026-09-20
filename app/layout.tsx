@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className="min-h-screen">
+      <body className="min-h-screen overflow-x-hidden">
         <div className="sticky top-0 z-10">
           <AppTitleBar />
           <TabNav />
