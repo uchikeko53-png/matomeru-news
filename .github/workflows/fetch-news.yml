@@ -1,0 +1,18 @@
+name: Fetch News Batch
+
+on:
+  schedule:
+    # UTC基準。22:00 UTC = 日本時間 7:00 / 10:00 UTC = 日本時間 19:00
+    - cron: "0 22 * * *"
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  fetch-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call fetch-news API
+        run: |
+          curl --fail --show-error \
+            -X POST "${{ secrets.APP_URL }}/api/cron/fetch-news" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
