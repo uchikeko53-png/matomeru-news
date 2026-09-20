@@ -61,9 +61,12 @@ function faviconUrl(link: string) {
     : null;
 }
 
+const JST = "Asia/Tokyo";
+
 function formatDateHeading(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("ja-JP", {
+    timeZone: JST,
     month: "long",
     day: "numeric",
     weekday: "short",
@@ -73,6 +76,7 @@ function formatDateHeading(iso: string) {
 function formatTime(iso: string | null) {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("ja-JP", {
+    timeZone: JST,
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -83,7 +87,7 @@ function groupByDate(articles: Article[]) {
   for (const article of articles) {
     const dateKey = new Date(
       article.published_at ?? article.created_at
-    ).toLocaleDateString("ja-JP");
+    ).toLocaleDateString("ja-JP", { timeZone: JST });
     if (!groups.has(dateKey)) groups.set(dateKey, []);
     groups.get(dateKey)!.push(article);
   }
