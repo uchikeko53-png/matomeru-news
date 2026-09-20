@@ -3,6 +3,7 @@ export type Feed = {
   name: string;
   url: string;
   enabled: boolean;
+  category: string | null;
   created_at: string;
 };
 
@@ -14,5 +15,12 @@ export type Article = {
   source_name: string | null;
   published_at: string | null;
   summary: string | null;
+  category: string | null;
+  created_at: string;
+};
+
+export type Keyword = {
+  id: number;
+  keyword: string;
   created_at: string;
 };

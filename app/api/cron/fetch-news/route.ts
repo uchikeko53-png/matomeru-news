@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
           source_name: feed.name,
           published_at: item.isoDate ?? item.pubDate ?? null,
           summary: snippet ? snippet.slice(0, MAX_SNIPPET_LENGTH) : null,
+          category: feed.category ?? null,
         };
       });
 

@@ -1,7 +1,57 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
-import type { Article } from "@/lib/types";
+import type { Article, Keyword } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+const CATEGORY_PALETTE = [
+  "bg-blue-100 text-blue-800",
+  "bg-purple-100 text-purple-800",
+  "bg-amber-100 text-amber-800",
+  "bg-emerald-100 text-emerald-800",
+  "bg-pink-100 text-pink-800",
+  "bg-orange-100 text-orange-800",
+  "bg-cyan-100 text-cyan-800",
+  "bg-rose-100 text-rose-800",
+];
+
+function categoryColor(category: string) {
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = (hash * 31 + category.charCodeAt(i)) >>> 0;
+  }
+  return CATEGORY_PALETTE[hash % CATEGORY_PALETTE.length];
+}
+
+const SOURCE_BRANDS: Record<string, string> = {
+  "yahoo.co.jp": "Yahoo",
+  "nhk.or.jp": "NHK",
+};
+
+function sourceHost(link: string) {
+  try {
+    return new URL(link).hostname.replace(/^www\d*\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function sourceBrand(link: string, fallback: string | null) {
+  const host = sourceHost(link);
+  if (!host) return fallback ?? "";
+  const known = Object.entries(SOURCE_BRANDS).find(([domain]) =>
+    host.endsWith(domain)
+  );
+  if (known) return known[1];
+  const base = host.split(".")[0];
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function faviconUrl(link: string) {
+  const host = sourceHost(link);
+  return host
+    ? `https://www.google.com/s2/favicons?domain=${host}&sz=32`
+    : null;
+}
 
 function formatDateHeading(iso: string) {
   const d = new Date(iso);
@@ -32,30 +82,148 @@ function groupByDate(articles: Article[]) {
   return groups;
 }
 
-export default async function Home() {
+function ArticleCard({ article }: { article: Article }) {
+  const favicon = faviconUrl(article.link);
+  return (
+    <li className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 flex items-center gap-2">
+        {article.category && (
+          <span
+            className={`rounded px-2 py-0.5 text-xs font-medium ${categoryColor(
+              article.category
+            )}`}
+          >
+            {article.category}
+          </span>
+        )}
+        <span className="flex items-center gap-1 text-xs text-gray-400">
+          {favicon && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={favicon} alt="" className="h-3.5 w-3.5 rounded-sm" />
+          )}
+          {sourceBrand(article.link, article.source_name)} ・{" "}
+          {formatTime(article.published_at)}
+        </span>
+      </div>
+      <a
+        href={article.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-base font-semibold text-gray-900 hover:underline"
+      >
+        {article.title}
+      </a>
+      {article.summary && (
+        <p className="mt-2 whitespace-pre-line text-sm text-gray-600">
+          {article.summary}
+        </p>
+      )}
+    </li>
+  );
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}) {
   const supabase = getSupabaseServerClient();
+  const selectedCategory = searchParams.category;
 
-  const { data: articles, error } = await supabase
-    .from("articles")
-    .select("*")
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(100);
+  const [{ data: articlesData, error }, { data: keywordsData }] =
+    await Promise.all([
+      supabase
+        .from("articles")
+        .select("*")
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(150),
+      supabase
+        .from("keywords")
+        .select("*")
+        .order("created_at", { ascending: true }),
+    ]);
 
-  const grouped = groupByDate((articles as Article[]) ?? []);
+  const allArticles = (articlesData as Article[]) ?? [];
+  const keywords = (keywordsData as Keyword[]) ?? [];
+
+  const categories = Array.from(
+    new Set(
+      allArticles
+        .map((a) => a.category)
+        .filter((c): c is string => Boolean(c))
+    )
+  );
+
+  const visibleArticles = selectedCategory
+    ? allArticles.filter((a) => a.category === selectedCategory)
+    : allArticles;
+
+  const matchedArticles =
+    keywords.length === 0
+      ? []
+      : visibleArticles.filter((a) => {
+          const haystack = `${a.title} ${a.summary ?? ""}`.toLowerCase();
+          return keywords.some((k) =>
+            haystack.includes(k.keyword.toLowerCase())
+          );
+        });
+
+  const grouped = groupByDate(visibleArticles);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">まとめるNewS</h1>
+        <h1 className="text-2xl font-bold">一覧</h1>
         <p className="mt-1 text-sm text-gray-500">
           RSSで収集したニュースの一覧
         </p>
       </header>
 
+      {categories.length > 0 && (
+        <nav className="mb-6 flex flex-wrap gap-2">
+          <a
+            href="/"
+            className={`rounded-full px-3 py-1 text-sm ${
+              !selectedCategory
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            すべて
+          </a>
+          {categories.map((cat) => (
+            <a
+              key={cat}
+              href={`/?category=${encodeURIComponent(cat)}`}
+              className={`rounded-full px-3 py-1 text-sm ${
+                selectedCategory === cat
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {cat}
+            </a>
+          ))}
+        </nav>
+      )}
+
       {error && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700">
           読み込みエラー: {error.message}
         </p>
+      )}
+
+      {!error && matchedArticles.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-sm font-semibold text-indigo-600">
+            キーワード一致
+          </h2>
+          <ul className="space-y-3">
+            {matchedArticles.map((article) => (
+              <ArticleCard article={article} key={`matched-${article.id}`} />
+            ))}
+          </ul>
+        </section>
       )}
 
       {!error && grouped.size === 0 && (
@@ -71,29 +239,7 @@ export default async function Home() {
           </h2>
           <ul className="space-y-3">
             {items.map((article) => (
-              <li
-                key={article.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              >
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xs text-gray-400">
-                    {article.source_name} ・ {formatTime(article.published_at)}
-                  </span>
-                </div>
-                <a
-                  href={article.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base font-semibold text-gray-900 hover:underline"
-                >
-                  {article.title}
-                </a>
-                {article.summary && (
-                  <p className="mt-2 whitespace-pre-line text-sm text-gray-600">
-                    {article.summary}
-                  </p>
-                )}
-              </li>
+              <ArticleCard article={article} key={article.id} />
             ))}
           </ul>
         </section>
