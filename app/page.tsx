@@ -1,7 +1,15 @@
+import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { runFetchNewsBatch } from "@/lib/fetchNews";
 import type { Article, Keyword } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+async function refreshNow() {
+  "use server";
+  await runFetchNewsBatch();
+  revalidatePath("/");
+}
 
 const CATEGORY_PALETTE = [
   "bg-blue-100 text-blue-800",
@@ -158,25 +166,46 @@ export default async function Home({
     ? allArticles.filter((a) => a.category === selectedCategory)
     : allArticles;
 
-  const matchedArticles =
-    keywords.length === 0
-      ? []
-      : visibleArticles.filter((a) => {
-          const haystack = `${a.title} ${a.summary ?? ""}`.toLowerCase();
-          return keywords.some((k) =>
-            haystack.includes(k.keyword.toLowerCase())
-          );
-        });
+  // キーワードごとに最新1件だけを拾う（同じ記事が複数キーワードにヒットした場合は重複させない）
+  const seenMatchIds = new Set<number>();
+  const matchedArticles: Article[] = [];
+  for (const k of keywords) {
+    const keywordLower = k.keyword.toLowerCase();
+    const match = visibleArticles.find((a) => {
+      if (seenMatchIds.has(a.id)) return false;
+      const haystack = `${a.title} ${a.summary ?? ""}`.toLowerCase();
+      return haystack.includes(keywordLower);
+    });
+    if (match) {
+      matchedArticles.push(match);
+      seenMatchIds.add(match.id);
+    }
+  }
+  matchedArticles.sort((a, b) => {
+    const at = new Date(a.published_at ?? a.created_at).getTime();
+    const bt = new Date(b.published_at ?? b.created_at).getTime();
+    return bt - at;
+  });
 
   const grouped = groupByDate(visibleArticles);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">一覧</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          RSSで収集したニュースの一覧
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">一覧</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            RSSで収集したニュースの一覧
+          </p>
+        </div>
+        <form action={refreshNow}>
+          <button
+            type="submit"
+            className="shrink-0 rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white"
+          >
+            今すぐ更新
+          </button>
+        </form>
       </header>
 
       {categories.length > 0 && (
