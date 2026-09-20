@@ -63,6 +63,7 @@ export default async function FeedsPage() {
 
       <form
         action={addFeed}
+        key={feeds.length}
         className="mb-6 space-y-2 rounded-lg border border-gray-200 bg-white p-4"
       >
         <input

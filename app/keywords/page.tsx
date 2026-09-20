@@ -43,7 +43,11 @@ export default async function KeywordsPage() {
         </p>
       </header>
 
-      <form action={addKeyword} className="mb-6 flex gap-2">
+      <form
+        action={addKeyword}
+        key={keywords.length}
+        className="mb-6 flex gap-2"
+      >
         <input
           type="text"
           name="keyword"
