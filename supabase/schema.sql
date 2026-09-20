@@ -31,6 +31,14 @@ create table if not exists keywords (
   created_at timestamptz not null default now()
 );
 
+-- 「サイト一覧」タブに表示する、RSSとは別のお気に入りサイトのブックマーク集
+create table if not exists bookmarks (
+  id bigint generated always as identity primary key,
+  name text not null,
+  url text not null unique,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists articles_published_at_idx on articles (published_at desc);
 create index if not exists articles_category_idx on articles (category);
 

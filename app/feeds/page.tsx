@@ -56,7 +56,10 @@ export default async function FeedsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
       <header className="mb-6">
-        <p className="text-sm text-gray-500">
+        <a href="/settings" className="text-sm text-gray-500 hover:underline">
+          ← 各種設定に戻る
+        </a>
+        <p className="mt-2 text-sm text-gray-500">
           ニュースの取得元（RSSフィード）とカテゴリを管理します。無効化したフィードは新規記事を取得しません。
         </p>
       </header>

@@ -38,8 +38,11 @@ export default async function KeywordsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
       <header className="mb-6">
-        <p className="text-sm text-gray-500">
-          登録したキーワードがタイトルや概要に含まれる記事が、「一覧」タブの上部「キーワード一致」に表示されます。
+        <a href="/settings" className="text-sm text-gray-500 hover:underline">
+          ← 各種設定に戻る
+        </a>
+        <p className="mt-2 text-sm text-gray-500">
+          登録したキーワードがタイトルや概要に含まれる記事が、「NewS一覧」タブの上部「キーワード一致」に表示されます。
         </p>
       </header>
 

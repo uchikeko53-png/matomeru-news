@@ -3,10 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const SETTINGS_PATHS = ["/settings", "/keywords", "/feeds", "/links"];
+
 const TABS = [
-  { href: "/", label: "一覧" },
-  { href: "/keywords", label: "キーワード設定" },
-  { href: "/feeds", label: "ソース管理" },
+  { href: "/", label: "NewS一覧", match: (p: string) => p === "/" },
+  {
+    href: "/site-list",
+    label: "サイト一覧",
+    match: (p: string) => p === "/site-list",
+  },
+  {
+    href: "/settings",
+    label: "⚙各種設定",
+    match: (p: string) => SETTINGS_PATHS.includes(p),
+  },
 ];
 
 export function TabNav() {
@@ -17,7 +27,7 @@ export function TabNav() {
   return (
     <nav className="flex border-b border-gray-200 bg-white">
       {TABS.map((tab) => {
-        const active = pathname === tab.href;
+        const active = tab.match(pathname);
         return (
           <Link
             key={tab.href}

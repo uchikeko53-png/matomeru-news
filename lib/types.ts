@@ -24,3 +24,10 @@ export type Keyword = {
   keyword: string;
   created_at: string;
 };
+
+export type Bookmark = {
+  id: number;
+  name: string;
+  url: string;
+  created_at: string;
+};
